@@ -1,10 +1,18 @@
-; Используя только операцию OUTCH, -Макрокоманда вывода символа на экран
-; вывести содержимое регистра AX 
-; в виде беззнакового 16-ричного числа («буквенные» цифры — от A до F).
+;Дано описание: A DB 60 DUP(?) 
+; числа со знаком B DB 101 DUP(?) 
+;Описать дальнюю процедуру OUTARR8, 
+;которой передается начальный адрес 
+;знакового байтового массива и число 
+;элементов в нем и которая печатает этот 
+;массив. Используя эту процедуру, выписать 
+;фрагмент основной программы для решения следующей задачи: 
+;если последний элемент массива A равен среднему элементу 
+;массива B, тогда напечатать массив A, иначе — массив B. 
+;Выполнить это упражнение при условии, что параметры передаются процедуре через регистры.
 
 format pe64 console 5.0
 entry start
-;include 'win64a.inc'
+include 'win64a.inc'
 
 section 'sec1' readable executable
 start:	sub rsp, 8
@@ -56,8 +64,8 @@ section 'sec2' readable writable
 	table db '0123456789ABCDEF' ; таблица символов, которую будет использовать XLATB
 
 section 'import' import data readable writable
-	;library kernel32, 'kernel32.dll',\
-		;user32, 'user32.dll'
+	library kernel32, 'kernel32.dll',\
+		user32, 'user32.dll'
 
-	;include 'api\kernel32.inc'
-	;include 'api\user32.inc'
+	include 'api\kernel32.inc'
+	include 'api\user32.inc'
