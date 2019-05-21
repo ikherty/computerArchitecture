@@ -2,19 +2,14 @@
 ; вывести содержимое регистра AX 
 ; в виде беззнакового 16-ричного числа («буквенные» цифры — от A до F).
 
-format pe64 console 5.0
+format ELF64 executable 3
 entry start
 ;include 'win64a.inc'
 
-section 'sec1' readable executable
-start:	sub rsp, 8
+segment readable executable
+start:
 
-	mov rcx, STD_OUTPUT_HANDLE; Нужно для вывода в консоль
-	call [GetStdHandle]
-	mov [hOutput], rax
-	
 ;////////////////////////////// Тут происходит вся магия
-
 	mov rbx, table; указываю где неходится таблица для xlatb
 	mov rdi, temp+3; указываю куда записывать 16-ные значения
 	std; запись будет происходить в обратную сторону (от больших адресов к меньшим)
@@ -29,35 +24,20 @@ start:	sub rsp, 8
 	stosb; сохраняю его в буффер
 	test rbp,rbp; Если я обработал не все, то начать заново
 	jne .loop1; начать цикл заново
-	
 ;//////////////////////////////
-
 .exit:
 	;PRINT
-	mov rcx, [hOutput]
-	mov rdx, temp
-	mov r8, 5
-	mov r9, useless
-	call [WriteConsole] ; Вывод в консоль
+	mov edx, 5 ; string lenth
+	mov rsi, temp
+	mov edi, 1
+	mov eax, 1
+	syscall ; WriteConsole
 
-	mov rcx, 0x8fffffff; чтобы окно не сразу закрылось 
-	loop $
+	xor edi, edi ; Exit
+	mov eax, 60
+	syscall
 
-	mov rcx, 0
-	call [ExitProcess]
-
-section 'sec2' readable writable
-	newLine db 10
-	hOutput dq ?
-	number dq 0xdeadbeef ; то самое число которе мы хотим представить в 16-м виде
-	temp db '0','0','0','0',0 ; Инициализирую строку нулями, чтобы числа < 0x1000 отображались корректно
-	useless dq ?
-
-	table db '0123456789ABCDEF' ; таблица символов, которую будет использовать XLATB
-
-section 'import' import data readable writable
-	;library kernel32, 'kernel32.dll',\
-		;user32, 'user32.dll'
-
-	;include 'api\kernel32.inc'
-	;include 'api\user32.inc'
+segment readable writable
+	number dq 0xdeadbeef; то самое число которе мы хотим представить в 16-м виде
+	temp db '0','0','0','0',10; Инициализирую строку нулями, чтобы числа < 0x1000 отображались корректно
+	table db '0123456789ABCDEF'; таблица символов, которую будет использовать XLATB
