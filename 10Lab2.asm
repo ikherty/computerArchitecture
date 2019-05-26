@@ -12,56 +12,111 @@
 
 format pe64 console 5.0
 entry start
+
 include 'win64a.inc'
 
 section 'sec1' readable executable
 start:	sub rsp, 8
-
-	mov rcx, STD_OUTPUT_HANDLE; Нужно для вывода в консоль
+	mov rcx, STD_OUTPUT_HANDLE
 	call [GetStdHandle]
 	mov [hOutput], rax
-	
-;////////////////////////////// Тут происходит вся магия
 
-	mov rbx, table; указываю где неходится таблица для xlatb
-	mov rdi, temp+3; указываю куда записывать 16-ные значения
-	std; запись будет происходить в обратную сторону (от больших адресов к меньшим)
-	mov rax, [number]; запихиваю число в RAX
-	and rax, 0xffff; оставляю только последние 4 байта
-	mov rbp, rax; теперь это число будет храниться в RBP
- .loop1:
-	mov rax, rbp; Считываю число
-	shr rbp, 4; сдвигаю его вправо на 4 бита
-	and rax, 0xf; очищаю все биты кроме первых 4-х (значение в AL является индексом в таблице по адресу в RBX. см. строку 13)
-	xlatb; Достаю байт из таблицы
-	stosb; сохраняю его в буффер
-	test rbp,rbp; Если я обработал не все, то начать заново
-	jne .loop1; начать цикл заново
-	
-;//////////////////////////////
+	xor rax, rax
+	xor rbx, rbx
 
-.exit:
-	;PRINT
-	mov rcx, [hOutput]
-	mov rdx, temp
-	mov r8, 5
-	mov r9, useless
-	call [WriteConsole] ; Вывод в консоль
+	mov al, [A + 59]
+	mov bl, [B + 50]
+	cmp rax, rbx
+	jne @f
 
-	mov rcx, 0x8fffffff; чтобы окно не сразу закрылось 
-	loop $
+	mov rcx, A
+	mov rdx, 60
+	call OUTARR8
+	jmp exit
 
-	mov rcx, 0
+@@:	mov rcx, B
+	mov rdx, 101
+	call OUTARR8
+
+exit:	xor rcx, rcx
 	call [ExitProcess]
 
-section 'sec2' readable writable
-	newLine db 10
-	hOutput dq ?
-	number dq 0xdeadbeef ; то самое число которе мы хотим представить в 16-м виде
-	temp db '0','0','0','0',0 ; Инициализирую строку нулями, чтобы числа < 0x1000 отображались корректно
-	useless dq ?
+OUTARR8:
+	mov r9, rcx; addr
+	mov r10, rdx; length
+	dec r10
 
-	table db '0123456789ABCDEF' ; таблица символов, которую будет использовать XLATB
+	mov rcx, r10
+printByte:
+	push r9
+	push r10
+	push rcx
+	add rcx, r9
+	;;;;;;;;;;;;;;;;;;;;;;;;;;;
+	call Byte2String; rcx - signed byte addr
+	mov rcx, [hOutput]
+	mov rdx, rax
+	mov r8, 4
+	mov r9, trash
+	call [WriteConsole]
+	;;;;;;;;;;;;;;;;;;;;;;;;;;;
+	pop rcx
+	pop r10
+	pop r9
+	loop printByte
+	ret
+
+Byte2String:
+	mov r8, rcx
+	mov rcx, 2
+	mov al, '0'
+	mov rdi, temp + 1
+	cld
+	rep stosb
+
+	mov al, [r8]
+	test al, 128
+	je @f
+	mov [temp], '-'
+	neg byte [r8]
+	inc byte [r8]
+	and byte [r8], 0x7f
+	jmp print_
+@@:	mov [temp], ' '
+
+print_: mov rbx, table
+	xor rax, rax
+	mov rdi, temp+2
+	std
+	mov al, [r8]
+	and rax, 0xff
+	mov rbp, rax
+ .loop1:
+	mov rax, rbp
+	shr rbp, 4
+	and rax, 0xf
+	xlatb
+	stosb
+	test rbp,rbp
+	jne .loop1
+
+	mov rax, temp
+	ret
+
+section 'sec2' readable writable
+
+	title db 'Pause',0
+	message db 'Press OK to continue...',0
+	message_ends:
+	number_string db 'Signed byte:',0
+	temp db 3 dup ?, 10, 0
+	trash dq ?
+
+	hOutput dq ?
+
+	A db 60 dup (31)
+	B db 101 dup (32)
+	table db '0123456789ABCDEF'
 
 section 'import' import data readable writable
 	library kernel32, 'kernel32.dll',\
