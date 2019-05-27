@@ -10,20 +10,11 @@
 ;массива B, тогда напечатать массив A, иначе — массив B. 
 ;Выполнить это упражнение при условии, что параметры передаются процедуре через регистры.
 
-format pe64 console 5.0
+format ELF64 executable 3
 entry start
 
-include 'win64a.inc'
-
-section 'sec1' readable executable
-start:	sub rsp, 8
-	mov rcx, STD_OUTPUT_HANDLE
-	call [GetStdHandle]
-	mov [hOutput], rax
-
-	xor rax, rax
-	xor rbx, rbx
-
+segment readable executable
+start:	
 	mov al, [A + 59]
 	mov bl, [B + 50]
 	cmp rax, rbx
@@ -38,8 +29,12 @@ start:	sub rsp, 8
 	mov rdx, 101
 	call OUTARR8
 
-exit:	xor rcx, rcx
-	call [ExitProcess]
+exit:	
+    xor rcx, rcx
+	;call [ExitProcess]
+	xor edi, edi ; Exit
+	mov eax, 60
+	syscall
 
 OUTARR8:
 	mov r9, rcx; addr
@@ -52,14 +47,14 @@ printByte:
 	push r10
 	push rcx
 	add rcx, r9
-	;;;;;;;;;;;;;;;;;;;;;;;;;;;
+	;
 	call Byte2String; rcx - signed byte addr
-	mov rcx, [hOutput]
-	mov rdx, rax
-	mov r8, 4
-	mov r9, trash
-	call [WriteConsole]
-	;;;;;;;;;;;;;;;;;;;;;;;;;;;
+	mov edx, 4 ; string lenth
+	mov rsi, temp
+	mov edi, 1
+	mov eax, 1
+	syscall ; WriteConsole
+	;
 	pop rcx
 	pop r10
 	pop r9
@@ -103,7 +98,7 @@ print_: mov rbx, table
 	mov rax, temp
 	ret
 
-section 'sec2' readable writable
+segment readable writable
 
 	title db 'Pause',0
 	message db 'Press OK to continue...',0
@@ -117,10 +112,3 @@ section 'sec2' readable writable
 	A db 60 dup (31)
 	B db 101 dup (32)
 	table db '0123456789ABCDEF'
-
-section 'import' import data readable writable
-	library kernel32, 'kernel32.dll',\
-		user32, 'user32.dll'
-
-	include 'api\kernel32.inc'
-	include 'api\user32.inc'
