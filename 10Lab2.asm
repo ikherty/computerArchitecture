@@ -1,5 +1,5 @@
 ;Дано описание: A DB 60 DUP(?) 
-; числа со знаком B DB 101 DUP(?) 
+;числа со знаком B DB 101 DUP(?) 
 ;Описать дальнюю процедуру OUTARR8, 
 ;которой передается начальный адрес 
 ;знакового байтового массива и число 
@@ -15,100 +15,91 @@ entry start
 
 segment readable executable
 start:	
-	mov al, [A + 59]
-	mov bl, [B + 50]
-	cmp rax, rbx
+	mov AL, [A + 59]; помещаю значения в AL
+	mov BL, [B + 50]; помещаю значения в BL
+	cmp RAX, RBX
 	jne @f
 
-	mov rcx, A
-	mov rdx, 60
+	mov RCX, A
+	mov RDX, 60
 	call OUTARR8
 	jmp exit
 
-@@:	mov rcx, B
-	mov rdx, 101
+@@:	mov RCX, B
+	mov RDX, 101
 	call OUTARR8
 
 exit:	
-    xor rcx, rcx
-	;call [ExitProcess]
-	xor edi, edi ; Exit
-	mov eax, 60
+    xor RCX, RCX
+	xor EDI, EDI ; Exit
+	mov EAX, 60
 	syscall
 
 OUTARR8:
-	mov r9, rcx; addr
-	mov r10, rdx; length
-	dec r10
+	mov R9, RCX; addr
+	mov R10, RDX; length
+	dec R10
 
-	mov rcx, r10
+	mov RCX, R10
 printByte:
-	push r9
-	push r10
-	push rcx
-	add rcx, r9
+	push R9
+	push R10
+	push RCX
+	add RCX, R9
 	;
-	call Byte2String; rcx - signed byte addr
-	mov edx, 4 ; string lenth
-	mov rsi, temp
-	mov edi, 1
-	mov eax, 1
+	call Byte2String
+	mov EDX, 4 ; string lenth
+	mov RCI, temp
+	mov EDI, 1
+	mov EAX, 1
 	syscall ; WriteConsole
 	;
-	pop rcx
-	pop r10
-	pop r9
+	pop RCX
+	pop R10
+	pop R9
 	loop printByte
-	ret
+	ret;возврат из подпрограммы
 
 Byte2String:
-	mov r8, rcx
-	mov rcx, 2
-	mov al, '0'
-	mov rdi, temp + 1
-	cld
-	rep stosb
+	mov R8, RCX
+	mov RCX, 2
+	mov AL, '0'
+	mov RDI, temp + 1
+	cld;очищает флаг направления в регистре флагов
+	rep stosb;Заполнить блок из (E)CX байт по адресу ES:(E)DI содержимым AL
 
-	mov al, [r8]
-	test al, 128
+	mov AL, [R8]
+	test AL, 128
 	je @f
 	mov [temp], '-'
-	neg byte [r8]
-	inc byte [r8]
-	and byte [r8], 0x7f
+	neg byte [R8]
+	inc byte [R8]
+	and byte [R8], 0x7f
 	jmp print_
 @@:	mov [temp], ' '
 
-print_: mov rbx, table
-	xor rax, rax
-	mov rdi, temp+2
+print_: mov RBX, table;регистр, где неходится таблица для xlatb
+	xor RAX, RAX
+	mov RDI, temp+2; регистр для записи 16-ных значений
 	std
-	mov al, [r8]
-	and rax, 0xff
-	mov rbp, rax
+	mov AL, [R8]
+	and RAX, 0xff
+	mov RBP, RAX
  .loop1:
-	mov rax, rbp
-	shr rbp, 4
-	and rax, 0xf
-	xlatb
-	stosb
-	test rbp,rbp
-	jne .loop1
+	mov RAX, RBP
+	shr RBP, 4
+	and RAX, 0xf
+	xlatb; достаю байт из таблицы
+	stosb; сохраняю его в буффер
+	test RBP,RBP; если обработалось не все, то начать заново
+	jne .loop1; начать цикл заново
 
-	mov rax, temp
-	ret
+	mov RAX, temp
+	ret;возврат из подпрограммы
 
 segment readable writable
 
-	title db 'Pause',0
-	message db 'Press OK to continue...',0
-	message_ends:
-	number_string db 'Signed byte:',0
 	temp db 3 dup ?, 10, 0
-	trash dq ?
-
-	hOutput dq ?
-
 	A db 60 dup (31)
 	B db 101 dup (32)
 	table db '0123456789ABCDEF'
