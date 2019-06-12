@@ -6,7 +6,7 @@ using namespace std;
 double test(double x,double y){
 double res;
 asm(
-    "fyl2x\n" //;Стек FPU теперь содержит: ST(0)=y*log2(x)
+    "fyl2x\n"                //Стек FPU теперь содержит: ST(0)=y*log2(x)
     "fld %%st(0)\n"          //Создаем еще одну копию z                      добавляем в стек
     "frndint\n"              //Округляем ST(0)=trunc(z) | ST(1)=z                
     "fxch %%st(1)\n"         //ST(0)=z | ST(1)=trunc(z)                      меняет местами содержимое регистров
@@ -27,7 +27,7 @@ asm(
 int main(){
     double exponent = 3.5, base=2.5, res;
     cout<<base<<" in "<<exponent<<":\n";
-    cout<<"Expected result= "<<(exponent*log(base)/log(2))<<endl;
+    cout<<"Expected result= "<<exp(exponent*log(base))<<endl;
     int start_time = clock();
     res = test(base,exponent);
     int end_time = clock();
